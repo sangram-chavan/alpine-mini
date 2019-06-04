@@ -3,7 +3,7 @@ if [ -z "$VERSION" ]; then
     VERSION=`cat VERSION` 
 fi
 if [ -z "$IMAGE_NAME" ]; then 
-    IMAGE_NAME="alpine-mini:$VERSION"
+    IMAGE_NAME="sangram/alpine-mini:$VERSION"
 fi
 
 
