@@ -114,7 +114,7 @@ for _srv in $(ls -1 /etc/service); do
 
 
 # catch shutdown signals
-trap shutdown SIGTERM SIGHUP
+trap shutdown SIGTERM SIGHUP SIGQUIT SIGINT
 wait $RUNSVDIR
 
 shutdown
