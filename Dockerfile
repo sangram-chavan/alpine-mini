@@ -28,8 +28,6 @@ RUN chmod a+x /bin/set_tz && \
     chmod a+x /sbin/start_runit && \
     chmod a+x /etc/run_once/00_dump_info.sh && \
     mkdir -p /etc/BUILDS/ && \
-    mkdir /etc/service && \
-    mkdir /etc/sv && \
     printf "Build of sangram/alpine-mini:$VERSION, date: %s\n"  `date -u +"%Y-%m-%dT%H:%M:%SZ"` > /etc/BUILDS/alpine-mini
 
 ENV HOME /root
