@@ -4,7 +4,7 @@ shutdown() {
   echo Shutting Down Container
 
   # running shutdown commands
-#  /etc/runit/3
+  #  /etc/runit/3
  
   # first shutdown any service started by runit
   for _srv in $(ls -1 /etc/service); do
@@ -19,43 +19,40 @@ shutdown() {
   sleep 0.5
 
   # kill any other processes still running in the container
-
   for _pid  in $(ps -eo pid | grep -v PID  | tr -d ' ' | grep -v '^1$' | head -n -6); do
     timeout -t 5 /bin/sh -c "kill $_pid && wait $_pid || kill -9 $_pid"
   done
   exit
 }
 
-# run pre-deamon tasks
+#----------------------------------------------------------------------------------------------------
+# Save all environment variables sent to container
+#----------------------------------------------------------------------------------------------------
+#env  | sed -e 's/=/="/' | sed -e 's/$/"/' > /etc/envvars
+for K in $(env | cut -d= -f1)
+do
+    VAL=$(eval echo \$$K)
+    echo "${K}=\"${VAL}\"" >> /etc/envvars
+done
 
-  # system one time tasks
-  PATH=/command:/sbin:/bin:/usr/sbin:/usr/bin
+#----------------------------------------------------------------------------------------------------
+# check for timezone setting
+#----------------------------------------------------------------------------------------------------
+if [ ! "$TIMEZONE" = "" ]; 
+then
+  echo "Setting timezone to "$TIMEZONE
+  /bin/set_tz $TIMEZONE
+fi
 
-  #
-  # save all environment variables sent to container
-  for K in $(env | cut -d= -f1)
-  do
-      VAL=$(eval echo \$$K)
-      echo "${K}=\"${VAL}\"" >> /etc/envvars
-  done
-
-  #
-  # check for timezone setting
-  #
-
-  if [ ! "$TIMEZONE" = "" ]; 
-  then
-    /bin/set_tz $TIMEZONE
-  fi
-
-  #
-  # run script once
-  echo "Run scripts in /etc/run_once"
-  #/bin/run-parts /etc/run_once
-  #find /etc/run_once -type f -perm +111 -exec {} \;
-  for script in /etc/run_once/*
-  do
-      if [ -x "$script" ]; then
+#----------------------------------------------------------------------------------------------------
+# System one time tasks
+#----------------------------------------------------------------------------------------------------
+echo "Run scripts in /etc/run_once"
+#/bin/run-parts /etc/run_once
+#find /etc/run_once -type f -perm +111 -exec {} \;
+for script in /etc/run_once/*
+do
+  if [ -x "$script" ]; then
           echo >&2 "*** Running: $script"
           $script
           retval=$?
@@ -67,41 +64,40 @@ shutdown() {
       fi
   done
 
-  # remove scripts in folder
-  rm -Rf /etc/run_once/*
+# remove scripts in folder
+rm -rf /etc/run_once/*
 
-  # run scripts everytime
-  echo "Run scripts is /etc/run_always"
-  #find /etc/run_always -type f -perm +111 -exec {} \;
+#----------------------------------------------------------------------------------------------------
+# System run always  tasks
+#----------------------------------------------------------------------------------------------------
+echo "Run scripts is /etc/run_always"
+#find /etc/run_always -type f -perm +111 -exec {} \;
+for script in /etc/run_always/*
+do
+    if [ -x "$script" ]; then
+        echo >&2 "*** Running: $script"
+        $script
+        retval=$?
+        if [ $retval != 0 ];
+        then
+            echo >&2 "*** Failed with return value: $?"
+            exit $retval
+        fi
+    fi
+done
 
-  for script in /etc/run_always/*
-  do
-      if [ -x "$script" ]; then
-          echo >&2 "*** Running: $script"
-          $script
-          retval=$?
-          if [ $retval != 0 ];
-          then
-              echo >&2 "*** Failed with return value: $?"
-              exit $retval
-          fi
-      fi
-  done
+touch /etc/runit/stopit
+chmod 0 /etc/runit/stopit
 
-
-
-
-  touch /etc/runit/stopit
-  chmod 0 /etc/runit/stopit
 # run pre-deamon tasks - end
 
-# start all deamons
-PATH=/command:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
 if [ $# -eq 0 ]; then
-    exec env - PATH=$PATH runsvdir -P /etc/service 'log: ...........................................................................................................................................................................................................................................................................................................................................................................................................'
+  exec /sbin/runsvdir -P /etc/service
 fi
 /sbin/runsvdir -P /etc/service &
 
+[ "$1" == '--' ] && shift
+exec $@
 
 RUNSVDIR=$!
 echo "Started runsvdir, PID is $RUNSVDIR"
@@ -110,7 +106,7 @@ echo "wait for processes to start...."
 sleep 5
 for _srv in $(ls -1 /etc/service); do
     sv status $_srv
-  done
+done
 
 
 # catch shutdown signals
