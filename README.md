@@ -10,4 +10,3 @@ Please feel free to use it or build upon it as needed.
 [![Open Source Love](https://badges.frapsoft.com/os/mit/mit.svg?v=102)](LICENSE)
 
 Refer `LICENSE` file in this repository.
-
